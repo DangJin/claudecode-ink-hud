@@ -1,0 +1,33 @@
+#!/bin/bash
+# ClaudeCode Ink HUD — quick control
+SERVER="/Users/dangjin/Code/kindle-todo/server.ts"
+
+case "${1:-start}" in
+  start)
+    if pgrep -f "server.ts" > /dev/null; then
+      echo "Already running (PID $(pgrep -f server.ts))"
+    else
+      nohup bun "$SERVER" > /dev/null 2>&1 &
+      sleep 1
+      echo "Started (PID $!)"
+    fi
+    ;;
+  stop)
+    pkill -f "server.ts" 2>/dev/null && echo "Stopped" || echo "Not running"
+    ;;
+  restart)
+    pkill -f "server.ts" 2>/dev/null; sleep 1
+    nohup bun "$SERVER" > /dev/null 2>&1 &
+    echo "Restarted (PID $!)"
+    ;;
+  status)
+    if pgrep -f "server.ts" > /dev/null; then
+      echo "Running (PID $(pgrep -f server.ts))"
+    else
+      echo "Not running"
+    fi
+    ;;
+  *)
+    echo "Usage: hud [start|stop|restart|status]"
+    ;;
+esac

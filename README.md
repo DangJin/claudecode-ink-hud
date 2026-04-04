@@ -85,6 +85,22 @@ bun server.ts
 
 Then open `http://<your-mac-ip>:3456` on Kindle's browser. Bookmark it.
 
+### Quick Control
+
+A `hud` CLI is included for easy management:
+
+```bash
+# Create a global shortcut (one-time)
+sudo ln -sf /path/to/claudecode-ink-hud/hud /usr/local/bin/hud
+```
+
+```bash
+hud start     # Start the server in background
+hud stop      # Stop the server
+hud restart   # Restart
+hud status    # Check if running
+```
+
 ---
 
 ## Setup Claude Code Hooks
@@ -154,6 +170,7 @@ Claude Code Hooks                     Kindle Browser
 ```
 claudecode-ink-hud/
   server.ts                         # The entire server (single file)
+  hud                               # CLI control script (start/stop/restart/status)
   scripts/
     kindle-hook.sh                  # PreToolUse hook -> POST /status
     kindle-statusline-wrapper.sh    # Statusline wrapper -> POST /status + claude-hud
