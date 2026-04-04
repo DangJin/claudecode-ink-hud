@@ -9,39 +9,51 @@ get_ip() {
 
 show_info() {
   local ip=$(get_ip)
-  echo "  Kindle: http://${ip}:${PORT}"
+  echo ""
+  echo "  Open this URL on your Kindle browser:"
+  echo "  --> http://${ip}:${PORT}"
+  echo ""
+  echo "  Make sure Kindle and Mac are on the same WiFi."
 }
 
 case "${1:-start}" in
   start)
     if pgrep -f "server.ts" > /dev/null; then
-      echo "Already running (PID $(pgrep -f server.ts))"
+      echo "[hud] Already running (PID $(pgrep -f server.ts))"
       show_info
     else
       nohup bun "$SERVER" > /dev/null 2>&1 &
       sleep 1
-      echo "Started (PID $!)"
+      echo "[hud] Server started (PID $!)"
       show_info
     fi
     ;;
   stop)
-    pkill -f "server.ts" 2>/dev/null && echo "Stopped" || echo "Not running"
+    pkill -f "server.ts" 2>/dev/null && echo "[hud] Server stopped." || echo "[hud] Not running."
     ;;
   restart)
     pkill -f "server.ts" 2>/dev/null; sleep 1
     nohup bun "$SERVER" > /dev/null 2>&1 &
-    echo "Restarted (PID $!)"
+    echo "[hud] Server restarted (PID $!)"
     show_info
     ;;
   status)
     if pgrep -f "server.ts" > /dev/null; then
-      echo "Running (PID $(pgrep -f server.ts))"
+      echo "[hud] Running (PID $(pgrep -f server.ts))"
       show_info
     else
-      echo "Not running"
+      echo "[hud] Not running. Use 'hud start' to launch."
     fi
     ;;
   *)
-    echo "Usage: hud [start|stop|restart|status]"
+    echo "ClaudeCode Ink HUD"
+    echo ""
+    echo "Usage: hud [command]"
+    echo ""
+    echo "Commands:"
+    echo "  start    Start the server (default)"
+    echo "  stop     Stop the server"
+    echo "  restart  Restart the server"
+    echo "  status   Check if server is running"
     ;;
 esac
