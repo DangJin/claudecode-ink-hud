@@ -1,15 +1,27 @@
 #!/bin/bash
 # ClaudeCode Ink HUD — quick control
 SERVER="/Users/dangjin/Code/kindle-todo/server.ts"
+PORT=3456
+
+get_ip() {
+  ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost"
+}
+
+show_info() {
+  local ip=$(get_ip)
+  echo "  Kindle: http://${ip}:${PORT}"
+}
 
 case "${1:-start}" in
   start)
     if pgrep -f "server.ts" > /dev/null; then
       echo "Already running (PID $(pgrep -f server.ts))"
+      show_info
     else
       nohup bun "$SERVER" > /dev/null 2>&1 &
       sleep 1
       echo "Started (PID $!)"
+      show_info
     fi
     ;;
   stop)
@@ -19,10 +31,12 @@ case "${1:-start}" in
     pkill -f "server.ts" 2>/dev/null; sleep 1
     nohup bun "$SERVER" > /dev/null 2>&1 &
     echo "Restarted (PID $!)"
+    show_info
     ;;
   status)
     if pgrep -f "server.ts" > /dev/null; then
       echo "Running (PID $(pgrep -f server.ts))"
+      show_info
     else
       echo "Not running"
     fi
