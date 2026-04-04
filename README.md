@@ -1,6 +1,8 @@
 # ClaudeCode Ink HUD
 
 > Turn an old Kindle into a real-time Claude Code heads-up display.
+>
+> *This is a community project, not affiliated with Anthropic.*
 
 [![Landing Page](https://img.shields.io/badge/Landing_Page-claudecode--ink--hud.jinstoys.app-black)](https://claudecode-ink-hud.jinstoys.app)
 
