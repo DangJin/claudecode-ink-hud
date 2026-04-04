@@ -46,6 +46,37 @@ function recordHeatmap() {
   saveHeatmap();
 }
 
+// Notification queue — in-memory, not persisted
+const NOTIFY_TTL = 60; // seconds before auto-expire on server side
+let notifications: Array<{ id: string; title: string; message: string; size: string; ttl: number; ts: number }> = [];
+
+const VALID_SIZES = ["sm", "md", "lg", "full"];
+const MSG_LIMITS: Record<string, number> = { sm: 60, md: 200, lg: 500, full: 800 };
+
+function addNotification(body: { title?: string; message?: string; size?: string; ttl?: number }) {
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const ttl = Math.max(5, Math.min(300, body.ttl || NOTIFY_TTL));
+  const size = VALID_SIZES.includes(body.size || "") ? body.size! : "md";
+  notifications.push({
+    id,
+    title: (body.title || "Notification").slice(0, 50),
+    message: (body.message || "").slice(0, MSG_LIMITS[size]),
+    size,
+    ttl,
+    ts: Date.now(),
+  });
+  // Keep max 20 notifications
+  if (notifications.length > 20) notifications = notifications.slice(-20);
+  return id;
+}
+
+function getAndCleanNotifications() {
+  const now = Date.now();
+  // Remove expired (server-side TTL as safety net)
+  notifications = notifications.filter(n => (now - n.ts) < n.ttl * 1000 + 30000);
+  return notifications;
+}
+
 // In-memory state — no database needed
 let state: Record<string, string> = {
   tool: "",
@@ -209,12 +240,42 @@ body {
 .rm-card.alert .rm-time { display: none; }
 /* Heatmap */
 .hm { padding: 4px 0; margin-top: 3px; height: 42px; overflow: hidden; }
-.hm-row { display: flex; justify-content: center; gap: 2px; }
-.hm-cell { width: 22px; text-align: center; }
-.hm-hour { font-size: 10px; color: #888; font-family: "Courier New", monospace; line-height: 1.2; }
-.hm-box { width: 20px; height: 16px; border: 1px solid #ccc; background: #fff; }
+.hm-row { display: flex; justify-content: center; gap: 1px; }
+.hm-cell { width: 21px; text-align: center; }
+.hm-hour { font-size: 9px; color: #888; font-family: "Courier New", monospace; line-height: 1.2; }
+.hm-box { width: 19px; height: 14px; border: 1px solid #ccc; background: #fff; }
 .hm-box.lo { background: #bbb; border-color: #999; }
 .hm-box.hi { background: #000; border-color: #000; }
+/* Notifications */
+.ntf-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1100; }
+.ntf-bg.show { display: block; }
+.ntf { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border: 4px solid #000; z-index: 1101; text-align: center; cursor: pointer; box-shadow: 6px 6px 0 #000; overflow: hidden; }
+.ntf.show { display: block; }
+/* Size: sm — compact toast */
+.ntf.sz-sm { width: 70%; max-width: 300px; padding: 12px 12px 8px; }
+.ntf.sz-sm .ntf-title { font-size: 20px; }
+.ntf.sz-sm .ntf-msg { font-size: 13px; max-height: 36px; overflow: hidden; }
+/* Size: md — default */
+.ntf.sz-md { width: 82%; max-width: 370px; padding: 16px 16px 12px; }
+.ntf.sz-md .ntf-title { font-size: 26px; }
+.ntf.sz-md .ntf-msg { font-size: 15px; max-height: 80px; overflow: hidden; }
+/* Size: lg — expanded */
+.ntf.sz-lg { width: 90%; max-width: 420px; padding: 16px 16px 12px; }
+.ntf.sz-lg .ntf-title { font-size: 26px; }
+.ntf.sz-lg .ntf-msg { font-size: 14px; max-height: 200px; overflow: hidden; text-align: left; line-height: 1.5; }
+/* Size: full — nearly full screen */
+.ntf.sz-full { width: 94%; max-width: 500px; max-height: 85%; padding: 14px 14px 10px; }
+.ntf.sz-full .ntf-title { font-size: 22px; }
+.ntf.sz-full .ntf-msg { font-size: 14px; max-height: 400px; overflow-y: auto; text-align: left; line-height: 1.5; }
+.ntf-title { font-weight: 900; font-family: "Courier New", monospace; letter-spacing: 1px; margin-bottom: 4px; word-break: break-word; }
+.ntf-msg { color: #555; margin-bottom: 8px; word-break: break-word; }
+.ntf-footer { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #888; font-family: "Courier New", monospace; }
+.ntf-timer { font-size: 13px; font-weight: bold; color: #555; }
+.ntf-msg code { font-family: "Courier New", monospace; background: #e8e8e8; padding: 1px 4px; font-size: 0.9em; }
+.ntf-msg pre { font-family: "Courier New", monospace; background: #f0f0f0; border-left: 3px solid #000; padding: 4px 8px; margin: 4px 0; font-size: 12px; text-align: left; overflow-x: hidden; white-space: pre-wrap; word-break: break-all; }
+.ntf-msg hr { border: none; border-top: 1px solid #ccc; margin: 6px 0; }
+.ntf-msg ul { text-align: left; margin: 2px 0; padding-left: 18px; }
+.ntf-msg li { margin: 1px 0; }
 </style>
 </head>
 <body>
@@ -303,6 +364,13 @@ body {
 <div class="overlay" id="ov-water" onclick="resetWater()"><div class="overlay-icon"><span class="ow-rim"></span><span class="ow-body"><span class="ow-water"></span></span></div><div class="overlay-title">GO DRINK!</div><div class="overlay-sub">tap to dismiss</div></div>
 <div class="overlay" id="ov-stand" onclick="resetStand()"><div class="overlay-icon"><span class="os-head"></span><span class="os-body"></span><span class="os-arm-l"></span><span class="os-arm-r"></span><span class="os-leg-l"></span><span class="os-leg-r"></span></div><div class="overlay-title">STAND UP!</div><div class="overlay-sub">tap to dismiss</div></div>
 
+<div class="ntf-bg" id="ntf-bg"></div>
+<div class="ntf" id="ntf-box" onclick="dismissNotify()">
+  <div class="ntf-title" id="ntf-title"></div>
+  <div class="ntf-msg" id="ntf-msg"></div>
+  <div class="ntf-footer"><span>tap to dismiss</span><span class="ntf-timer" id="ntf-timer"></span></div>
+</div>
+
 <script>
 (function() {
   var last = "";
@@ -364,11 +432,12 @@ body {
   function shortFile(f) { if(!f)return""; if(f.length>30){var p=f.split("/"); return p.length>1?".../"+p[p.length-1]:f.substring(0,30);} return f; }
   function renderHeatmap(hm) {
     if(!hm||!hm.length) return;
-    var START=8, END=24;
+    var START=0, END=24;
     var hours="", blocks="";
     for(var i=START;i<END;i++){
       var h=i<10?"0"+i:""+i;
-      hours+='<span class="hm-cell"><span class="hm-hour">'+h+'</span></span>';
+      var label = (i%2===0) ? h : "";
+      hours+='<span class="hm-cell"><span class="hm-hour">'+label+'</span></span>';
       var v=hm[i]||0;
       var cls=v===0?"hm-box":v<6?"hm-box lo":"hm-box hi";
       blocks+='<span class="hm-cell"><div class="'+cls+'"></div></span>';
@@ -383,6 +452,88 @@ body {
       else{h+='<div class="lg-e"><span class="lg-n">&nbsp;</span><span class="lg-f"></span><span class="lg-t2"></span></div>';}
     }
     c.innerHTML=h;
+  }
+
+  // --- Mini markdown parser (no deps, XSS-safe) ---
+  var BT = String.fromCharCode(96); // backtick char
+  var BT3 = BT+BT+BT;
+  function esc(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function miniMd(raw) {
+    if (!raw) return "";
+    var lines = raw.split("\\n");
+    var out = [], inCode = false, codeBlock = [], inList = false;
+    for (var i = 0; i < lines.length; i++) {
+      var ln = lines[i];
+      if (ln.indexOf(BT3) === 0) {
+        if (inCode) { out.push("<pre>" + esc(codeBlock.join("\\n")) + "</pre>"); codeBlock = []; }
+        inCode = !inCode; continue;
+      }
+      if (inCode) { codeBlock.push(ln); continue; }
+      if (inList && !/^[-*] /.test(ln)) { out.push("</ul>"); inList = false; }
+      if (/^---+$/.test(ln.trim())) { out.push("<hr>"); continue; }
+      if (/^[-*] /.test(ln)) {
+        if (!inList) { out.push("<ul>"); inList = true; }
+        out.push("<li>" + inlineMd(esc(ln.replace(/^[-*] /, ""))) + "</li>");
+        continue;
+      }
+      if (ln.trim() === "") { out.push("<br>"); continue; }
+      out.push(inlineMd(esc(ln)) + "<br>");
+    }
+    if (inCode && codeBlock.length) out.push("<pre>" + esc(codeBlock.join("\\n")) + "</pre>");
+    if (inList) out.push("</ul>");
+    var result = out.join("");
+    if (result.slice(-4) === "<br>") result = result.slice(0, -4);
+    return result;
+  }
+  function inlineMd(s) {
+    s = s.replace(/\\*\\*(.+?)\\*\\*/g, "<b>$1</b>");
+    s = s.replace(/\\*(.+?)\\*/g, "<i>$1</i>");
+    var re = new RegExp(BT + "([^" + BT + "]+)" + BT, "g");
+    s = s.replace(re, "<code>$1</code>");
+    return s;
+  }
+
+  // --- Notification queue ---
+  var ntfQueue = [];
+  var ntfSeen = {};
+  var ntfCurrent = null;
+  var ntfCountdown = 0;
+  var ntfTimerInterval = null;
+  function showNextNotify() {
+    if (ntfCurrent) return;
+    if (ntfQueue.length === 0) return;
+    ntfCurrent = ntfQueue.shift();
+    var sz = ntfCurrent.size || "md";
+    document.getElementById("ntf-title").textContent = ntfCurrent.title;
+    document.getElementById("ntf-msg").innerHTML = miniMd(ntfCurrent.message || "");
+    document.getElementById("ntf-msg").style.display = ntfCurrent.message ? "block" : "none";
+    ntfCountdown = ntfCurrent.ttl || 60;
+    document.getElementById("ntf-timer").textContent = ntfCountdown + "s";
+    document.getElementById("ntf-bg").className = "ntf-bg show";
+    document.getElementById("ntf-box").className = "ntf sz-" + sz + " show";
+    if (ntfTimerInterval) clearInterval(ntfTimerInterval);
+    ntfTimerInterval = setInterval(function() {
+      ntfCountdown--;
+      document.getElementById("ntf-timer").textContent = ntfCountdown + "s";
+      if (ntfCountdown <= 0) dismissNotify();
+    }, 1000);
+  }
+  window.dismissNotify = function() {
+    if (ntfTimerInterval) { clearInterval(ntfTimerInterval); ntfTimerInterval = null; }
+    ntfCurrent = null;
+    document.getElementById("ntf-bg").className = "ntf-bg";
+    document.getElementById("ntf-box").className = "ntf";
+    setTimeout(showNextNotify, 300);
+  };
+  function processNotifications(list) {
+    if (!list || !list.length) return;
+    for (var i = 0; i < list.length; i++) {
+      if (!ntfSeen[list[i].id]) {
+        ntfSeen[list[i].id] = true;
+        ntfQueue.push(list[i]);
+      }
+    }
+    showNextNotify();
   }
 
   function updateUI(d) {
@@ -423,7 +574,7 @@ body {
 
   function poll() {
     var x=new XMLHttpRequest(); x.open("GET","/status");
-    x.onload=function(){if(x.status===200){try{updateUI(JSON.parse(x.responseText)); checkFreshness();}catch(e){}}};
+    x.onload=function(){if(x.status===200){try{var d=JSON.parse(x.responseText); updateUI(d); checkFreshness(); if(d.notifications) processNotifications(d.notifications);}catch(e){}}};
     x.onerror=function(){
       document.getElementById("act-card").className="act offline";
       document.getElementById("s-tool").textContent="Server offline";
@@ -466,9 +617,21 @@ const server = Bun.serve({
       }).catch(() => Response.json({ error: "bad json" }, { status: 400 }));
     }
 
+    // POST /notify — push notification (localhost only)
+    if (req.method === "POST" && url.pathname === "/notify") {
+      const host = url.hostname;
+      if (host !== "localhost" && host !== "127.0.0.1") {
+        return Response.json({ error: "POST only from localhost" }, { status: 403 });
+      }
+      return req.json().then((body: { title?: string; message?: string; size?: string; ttl?: number }) => {
+        const id = addNotification(body);
+        return Response.json({ ok: true, id });
+      }).catch(() => Response.json({ error: "bad json" }, { status: 400 }));
+    }
+
     // GET /status — Kindle polls
     if (req.method === "GET" && url.pathname === "/status") {
-      return Response.json({ ...state, heatmap }, {
+      return Response.json({ ...state, heatmap, notifications: getAndCleanNotifications() }, {
         headers: { "Cache-Control": "no-cache, no-store", "Access-Control-Allow-Origin": "*" },
       });
     }
@@ -497,5 +660,6 @@ console.log(`
 ╠══════════════════════════════════════════════╣
 ║  Kindle:  http://${lanIP}:${PORT}
 ║  Hook:    http://localhost:${PORT}/status
+║  Notify:  http://localhost:${PORT}/notify
 ╚══════════════════════════════════════════════╝
 `);
