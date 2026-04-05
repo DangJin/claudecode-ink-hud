@@ -294,6 +294,7 @@ body {
 <div class="hdr">
   <span class="gear" onclick="openSettings()">[=]</span>
   <span class="gear" style="left:42px" onclick="showHelp()">[?]</span>
+  <span class="gear" style="left:84px" onclick="location.href='/clock'">[O]</span>
   <span class="hdr-clock" id="clock"></span>
   <span class="hdr-session" id="i-session"></span>
   <span class="ci"><span class="ci-body"></span><span class="ci-eye-l"></span><span class="ci-eye-r"></span><span class="ci-leg ci-l1"></span><span class="ci-leg ci-l2"></span><span class="ci-leg ci-l3"></span><span class="ci-leg ci-l4"></span></span>
@@ -548,7 +549,7 @@ body {
   }
 
   function updateUI(d) {
-    if(d.timestamp===last) return; last=d.timestamp;
+    if(d.timestamp===last) return; last=d.timestamp; resetIdle();
     var tn=cleanTool(d.tool); document.getElementById("s-tool").textContent=prefixTool(d.tool);
     var f=document.getElementById("s-file"); if(d.file){f.textContent=d.file;f.className="act-file vis";}else{f.textContent="";f.className="act-file";}
     document.getElementById("s-time").textContent=fmt(d.timestamp); document.getElementById("clock").textContent=now();
@@ -598,9 +599,123 @@ body {
   window.showHelp=function(){document.getElementById("welcome-bg").className="welcome-bg show";document.getElementById("welcome").className="welcome show";};
   try{if(!localStorage.getItem("kindle-status-welcomed")){document.getElementById("welcome-bg").className="welcome-bg show";document.getElementById("welcome").className="welcome show";}}catch(e){}
 
+  // Auto-switch to clock after 5 min idle
+  var idleTimer = 0;
+  function resetIdle() { idleTimer = 0; }
+  function tickIdle() {
+    idleTimer += 30;
+    if (idleTimer >= STALE_SEC) { location.href = "/clock"; }
+  }
+
   renderHistory(); poll();
   setInterval(poll, 10000);
-  setInterval(function(){document.getElementById("clock").textContent=now();if(sessionStartCache)document.getElementById("i-session").textContent=dur(sessionStartCache);checkFreshness();},30000);
+  setInterval(function(){document.getElementById("clock").textContent=now();if(sessionStartCache)document.getElementById("i-session").textContent=dur(sessionStartCache);checkFreshness();tickIdle();},30000);
+})();
+</script>
+</body>
+</html>`;
+}
+
+function getClockHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Courier New", monospace;
+  background: #fff;
+  color: #000;
+  -webkit-font-smoothing: none;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+.clock-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 0;
+}
+.digit {
+  font-family: "Bebas Neue", Helvetica, "Amazon Ember", Arial, sans-serif;
+  font-size: 300px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  line-height: 0.85;
+  text-align: center;
+}
+.digit-hour { color: #999; }
+.digit-min { color: #000; }
+.clock-date {
+  font-family: "Courier New", monospace;
+  font-size: 16px;
+  color: #999;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-top: 16px;
+}
+.clock-hint {
+  font-size: 11px;
+  color: #ccc;
+  margin-bottom: 12px;
+}
+</style>
+</head>
+<body onclick="location.href='/'">
+<div class="clock-wrap">
+  <div class="digit digit-hour" id="c-hour">--</div>
+  <div class="digit digit-min" id="c-min">--</div>
+  <div class="clock-date" id="c-date"></div>
+</div>
+<div style="text-align:center"><span class="clock-hint">tap to return</span></div>
+<script>
+(function(){
+  var TZ = ${TZ_OFFSET_HOURS};
+  var days = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+  var months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  function update() {
+    var utc = Date.now();
+    var d = new Date(utc + TZ * 3600000);
+    var h = d.getUTCHours(), m = d.getUTCMinutes();
+    document.getElementById("c-hour").textContent = (h < 10 ? "0" : "") + h;
+    document.getElementById("c-min").textContent = (m < 10 ? "0" : "") + m;
+    document.getElementById("c-date").textContent = days[d.getUTCDay()] + " \\u00B7 " + months[d.getUTCMonth()] + " " + d.getUTCDate();
+  }
+  update();
+  setInterval(update, 60000);
+
+  // Auto-return to HUD when Claude Code becomes active (new tool call)
+  var lastTool = "";
+  var lastToolTs = "";
+  function checkActive() {
+    var x = new XMLHttpRequest();
+    x.open("GET", "/status");
+    x.onload = function() {
+      if (x.status === 200) {
+        try {
+          var d = JSON.parse(x.responseText);
+          var key = (d.tool||"") + (d.timestamp||"");
+          if (key && key !== lastToolTs) {
+            if (lastToolTs && d.tool) {
+              location.href = "/";
+              return;
+            }
+            lastToolTs = key;
+          }
+        } catch(e) {}
+      }
+    };
+    x.send();
+  }
+  setInterval(checkActive, 15000);
 })();
 </script>
 </body>
@@ -644,6 +759,13 @@ const server = Bun.serve({
     if (req.method === "GET" && url.pathname === "/status") {
       return Response.json({ ...state, heatmap, notifications: getAndCleanNotifications() }, {
         headers: { "Cache-Control": "no-cache, no-store", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    // GET /clock — Clock page
+    if (req.method === "GET" && url.pathname === "/clock") {
+      return new Response(getClockHTML(), {
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" },
       });
     }
 
