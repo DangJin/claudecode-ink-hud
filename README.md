@@ -61,6 +61,7 @@ Claude Code ──> localhost:3456 ──> Kindle E-ink
 | `!!` **Reminders** | Configurable drink water & stand up timers with full-screen modal alerts |
 | `===` **Activity Log** | Last 8 tool calls with file paths and timestamps |
 | `---` **Offline Detection** | Dashed border + "last seen Xm ago" when Claude Code is inactive |
+| `💬` **Notification API** | Push popups to Kindle via `POST /notify` with markdown support and 4 size options |
 | `0.0` **Zero Everything** | No cloud, no database, no npm install. One Bun script on your LAN |
 
 ---
@@ -141,6 +142,51 @@ http://192.168.x.x:3456/?water=20&stand=30
 
 ---
 
+## Notification API
+
+Push popups to your Kindle via `POST /notify`. Notifications queue up and display one at a time with auto-dismiss countdown.
+
+```bash
+# Basic notification
+curl -X POST http://localhost:3456/notify \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Hello","message":"from your Mac"}'
+
+# Full-featured with markdown
+curl -X POST http://localhost:3456/notify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Deploy Complete",
+    "message": "**v1.1.0** pushed to production\n\n- Notification API\n- Markdown support\n- 4 size options",
+    "size": "lg",
+    "ttl": 120
+  }'
+```
+
+### Parameters
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `title` | string | `""` | Popup title |
+| `message` | string | `""` | Body text (supports markdown) |
+| `size` | string | `"md"` | Popup size: `sm` `md` `lg` `full` |
+| `ttl` | number | `60` | Auto-dismiss in seconds (5–300) |
+
+### Sizes
+
+| Size | Width | Max chars | Use case |
+|------|-------|-----------|----------|
+| `sm` | 70% | 60 | Quick toast |
+| `md` | 85% | 200 | Normal notification |
+| `lg` | 92% | 500 | Detailed message |
+| `full` | 100% | 800 | Long-form content |
+
+### Markdown Support
+
+Supports: `**bold**`, `*italic*`, `` `inline code` ``, code blocks (` ``` `), lists (`- item`), and horizontal rules (`---`).
+
+---
+
 ## Architecture
 
 ```
@@ -154,8 +200,10 @@ Claude Code Hooks                     Kindle Browser
   |                                           |
   |   state: { tool, file, model, ctx%, ... } |
   |   heatmap: [0,0,...,12,...,0]  (24 slots) |
+  |   notifications: [ queued popups ]        |
   |                                           |
-  |   POST: localhost only (403 for LAN)      |
+  |   POST /status:  localhost only (403 LAN) |
+  |   POST /notify:  localhost only (403 LAN) |
   |   GET:  0.0.0.0 (any LAN device)         |
   +-------------------------------------------+
          |
