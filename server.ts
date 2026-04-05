@@ -125,7 +125,7 @@ body {
   font-family: "Amazon Ember", Helvetica, sans-serif;
   background: #fff;
   color: #000;
-  padding: 10px 14px;
+  padding: 12px 16px;
   line-height: 1.2;
   -webkit-font-smoothing: none;
 }
@@ -142,7 +142,7 @@ body {
 .ctx-right .fill { top: 0; left: 0; width: 100%; height: 0; }
 .ctx-left .fill { bottom: 0; left: 0; width: 100%; height: 0; }
 .ctx-label { position: fixed; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 10px; font-family: "Courier New", monospace; color: #666; background: #fff; padding: 0 6px; z-index: 11; }
-.hdr { text-align: center; padding: 4px 0 6px; border-bottom: 2px solid #000; margin-bottom: 5px; position: relative; }
+.hdr { text-align: center; padding: 4px 0 6px; border-bottom: 2px solid #000; margin-bottom: 8px; position: relative; }
 .hdr-clock { position: absolute; right: 0; top: 4px; font-size: 13px; font-family: "Courier New", monospace; }
 .hdr-session { position: absolute; right: 0; bottom: 6px; font-size: 12px; color: #555; }
 .ci { display: inline-block; width: 68px; height: 62px; position: relative; vertical-align: middle; }
@@ -154,31 +154,33 @@ body {
 .px-title { font-family: "Courier New", monospace; font-size: 20px; font-weight: 900; letter-spacing: 5px; text-transform: uppercase; margin-top: 2px; text-shadow: 1px 0 0 #000, 2px 0 0 #000; }
 .hdr-model { font-size: 11px; color: #666; }
 .gear { position: absolute; left: 0; top: 4px; font-size: 18px; cursor: pointer; width: 24px; text-align: center; font-family: "Courier New", monospace; }
-.sl { font-size: 12px; font-weight: bold; color: #555; margin-bottom: 2px; }
-.act { border: 2px solid #000; padding: 5px 8px 8px; margin-bottom: 5px; height: 68px; overflow: hidden; }
+.sl { font-size: 12px; font-weight: 900; color: #555; margin-bottom: 4px; margin-top: 6px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 2px; }
+.sl:first-of-type { margin-top: 0; }
+.act { border: 2px solid #000; padding: 6px 8px 8px; height: 68px; overflow: hidden; }
 .act-row { display: flex; justify-content: space-between; align-items: baseline; }
-.act-tool { font-size: 20px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 75%; }
+.act-tool { font-size: 20px; font-weight: 900; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 75%; }
 .act-time { font-size: 12px; color: #555; font-family: "Courier New", monospace; }
 .act-file { font-size: 12px; font-family: "Courier New", monospace; padding: 2px 6px; background: #f0f0f0; border-left: 3px solid #000; margin-top: 3px; word-break: break-all; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; height: 18px; visibility: hidden; }
 .act-file.vis { visibility: visible; }
 .act.offline { border-style: dashed; color: #999; }
 .act.offline .act-tool { color: #999; }
 .act-stale { font-size: 11px; color: #999; font-family: "Courier New", monospace; text-align: right; }
-.gs { display: flex; gap: 4px; margin-bottom: 5px; }
-.g { flex: 1; border: 1px solid #888; padding: 4px 6px 6px; height: 44px; overflow: hidden; }
-.g-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
-.g-lbl { font-size: 14px; font-weight: bold; }
-.g-val { font-size: 16px; font-weight: bold; font-family: "Courier New", monospace; }
-.g-bar { height: 14px; background: #e8e8e8; border: 1px solid #888; position: relative; }
-.g-fill { height: 100%; background: #000; position: absolute; left: 0; top: 0; }
-.mt { display: flex; justify-content: space-between; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; padding: 3px 4px; margin-bottom: 5px; font-size: 14px; height: 22px; overflow: hidden; }
-.lg { border: 1px solid #ccc; padding: 4px 6px; margin-bottom: 4px; height: 200px; overflow: hidden; }
-.lg-t { font-size: 13px; font-weight: bold; color: #555; margin-bottom: 2px; border-bottom: 1px solid #ddd; padding-bottom: 2px; }
-.lg-e { display: flex; font-size: 14px; height: 22px; line-height: 22px; border-bottom: 1px dotted #ddd; font-family: "Courier New", monospace; }
+.gs { overflow: hidden; }
+.g { float: left; width: 49%; background: #f0f0f0; padding: 6px 8px; height: 40px; overflow: hidden; }
+.g + .g { float: right; }
+.g-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+.g-lbl { font-size: 13px; font-weight: bold; color: #555; }
+.g-val { font-size: 16px; font-weight: 900; font-family: "Courier New", monospace; }
+.g-bar { height: 10px; background: #ddd; position: relative; border-radius: 1px; }
+.g-fill { height: 100%; background: #000; position: absolute; left: 0; top: 0; border-radius: 1px; }
+.mt { display: flex; justify-content: space-between; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 4px 8px; font-size: 13px; height: 24px; overflow: hidden; color: #555; }
+.lg { padding: 0 4px; height: 160px; overflow: hidden; }
+.lg-t { font-size: 12px; font-weight: bold; color: #888; margin-bottom: 4px; border-bottom: 1px solid #ddd; padding-bottom: 4px; letter-spacing: 1px; }
+.lg-e { display: flex; font-size: 13px; height: 20px; line-height: 20px; border-bottom: 1px dotted #eee; font-family: "Courier New", monospace; }
 .lg-e:last-child { border-bottom: none; }
-.lg-n { font-weight: bold; width: 70px; flex-shrink: 0; }
-.lg-f { flex: 1; color: #555; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 4px; }
-.lg-t2 { color: #888; width: 45px; text-align: right; flex-shrink: 0; }
+.lg-n { font-weight: 900; width: 70px; flex-shrink: 0; }
+.lg-f { flex: 1; color: #666; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 4px; }
+.lg-t2 { color: #999; width: 45px; text-align: right; flex-shrink: 0; }
 .settings { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 380px; background: #fff; border: 3px solid #000; z-index: 999; padding: 14px 16px; box-shadow: 4px 4px 0 #000; }
 .settings.show { display: block; }
 .set-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 12px; border-bottom: 1px solid #ccc; padding-bottom: 6px; }
@@ -202,9 +204,10 @@ body {
 .welcome .w-text { font-size: 13px; line-height: 1.4; }
 .welcome .w-text b { font-size: 14px; }
 .welcome .w-ok { display: block; width: 100%; margin-top: 12px; padding: 10px; font-size: 16px; font-weight: bold; background: #000; color: #fff; border: none; cursor: pointer; font-family: "Amazon Ember", Helvetica, sans-serif; }
-.rm { display: flex; gap: 6px; margin-top: 4px; }
-.rm-card { flex: 1; border: 1px solid #aaa; padding: 4px 6px; text-align: center; cursor: pointer; height: 62px; overflow: hidden; }
-.rm-card.alert { border: 3px solid #000; background: #f0f0f0; }
+.rm { overflow: hidden; }
+.rm-card { float: left; width: 49%; background: #f0f0f0; padding: 4px 6px; text-align: center; cursor: pointer; height: 60px; overflow: hidden; }
+.rm-card + .rm-card { float: right; }
+.rm-card.alert { border: 3px solid #000; background: #e8e8e8; }
 .overlay-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 998; }
 .overlay-bg.show { display: block; }
 .overlay { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 360px; background: #fff; border: 4px solid #000; z-index: 999; text-align: center; padding: 20px 16px 16px; cursor: pointer; box-shadow: 6px 6px 0 #000; }
@@ -238,14 +241,17 @@ body {
 .rm-alert-text { font-size: 13px; font-weight: 900; display: none; }
 .rm-card.alert .rm-alert-text { display: block; }
 .rm-card.alert .rm-time { display: none; }
-/* Heatmap */
-.hm { padding: 4px 0; margin-top: 3px; height: 42px; overflow: hidden; }
+/* Heatmap — 6 level grayscale */
+.hm { padding: 4px 0; height: 40px; overflow: hidden; }
 .hm-row { display: flex; justify-content: center; gap: 1px; }
 .hm-cell { width: 21px; text-align: center; }
-.hm-hour { font-size: 9px; color: #888; font-family: "Courier New", monospace; line-height: 1.2; }
-.hm-box { width: 19px; height: 14px; border: 1px solid #ccc; background: #fff; }
-.hm-box.lo { background: #bbb; border-color: #999; }
-.hm-box.hi { background: #000; border-color: #000; }
+.hm-hour { font-size: 9px; color: #999; font-family: "Courier New", monospace; line-height: 1.2; }
+.hm-box { width: 19px; height: 14px; background: #f0f0f0; }
+.hm-box.l1 { background: #ccc; }
+.hm-box.l2 { background: #aaa; }
+.hm-box.l3 { background: #777; }
+.hm-box.l4 { background: #444; }
+.hm-box.l5 { background: #000; }
 /* Notifications */
 .ntf-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1100; }
 .ntf-bg.show { display: block; }
@@ -295,7 +301,7 @@ body {
   <div class="hdr-model" id="i-model"></div>
 </div>
 
-<div class="sl">&#9654; Current Action</div>
+<div class="sl">Current Action</div>
 <div class="act" id="act-card">
   <div class="act-row">
     <span class="act-tool" id="s-tool">Loading...</span>
@@ -305,23 +311,23 @@ body {
   <div class="act-stale" id="s-stale"></div>
 </div>
 
-<div class="sl">&#9632; Metrics</div>
+<div class="sl">Metrics</div>
 <div class="gs">
   <div class="g"><div class="g-row"><span class="g-lbl">Context</span><span class="g-val" id="g-ctx">—</span></div><div class="g-bar"><div class="g-fill" id="g-ctx-fill" style="width:0%"></div></div></div>
   <div class="g"><div class="g-row"><span class="g-lbl">5h Limit</span><span class="g-val" id="g-5h">—</span></div><div class="g-bar"><div class="g-fill" id="g-5h-fill" style="width:0%"></div></div></div>
 </div>
 
 <div class="mt">
-  <span>&#9679; <b id="i-project">—</b></span>
-  <span>&#9588; <b id="i-git">—</b></span>
+  <span><b id="i-project">—</b></span>
+  <span><b id="i-git">—</b></span>
 </div>
 
+<div class="sl">Recent Activity</div>
 <div class="lg">
-  <div class="lg-t">&#9776; Recent Activity</div>
   <div id="log-entries"></div>
 </div>
 
-<div class="sl">!! Reminders</div>
+<div class="sl">Reminders</div>
 <div class="rm">
   <div class="rm-card" id="rm-water" onclick="resetWater()">
     <div class="rm-icons"><span class="icon-water"><span class="iw-rim"></span><span class="iw-body"><span class="iw-water"></span></span></span></div>
@@ -337,7 +343,7 @@ body {
   </div>
 </div>
 
-<div class="sl">::: Today's Activity</div>
+<div class="sl">Activity</div>
 <div class="hm" id="heatmap"></div>
 
 <div class="welcome-bg" id="welcome-bg"></div>
@@ -439,7 +445,12 @@ body {
       var label = (i%2===0) ? h : "";
       hours+='<span class="hm-cell"><span class="hm-hour">'+label+'</span></span>';
       var v=hm[i]||0;
-      var cls=v===0?"hm-box":v<6?"hm-box lo":"hm-box hi";
+      var cls="hm-box";
+      if(v>=1&&v<=2)cls="hm-box l1";
+      else if(v>=3&&v<=5)cls="hm-box l2";
+      else if(v>=6&&v<=10)cls="hm-box l3";
+      else if(v>=11&&v<=20)cls="hm-box l4";
+      else if(v>20)cls="hm-box l5";
       blocks+='<span class="hm-cell"><div class="'+cls+'"></div></span>';
     }
     document.getElementById("heatmap").innerHTML='<div class="hm-row">'+hours+'</div><div class="hm-row">'+blocks+'</div>';
