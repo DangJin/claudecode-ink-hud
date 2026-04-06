@@ -552,9 +552,9 @@ body {
     if(d.timestamp===last) return; last=d.timestamp; resetIdle();
     var tn=cleanTool(d.tool); document.getElementById("s-tool").textContent=prefixTool(d.tool);
     var f=document.getElementById("s-file"); if(d.file){f.textContent=d.file;f.className="act-file vis";}else{f.textContent="";f.className="act-file";}
-    document.getElementById("s-time").textContent=fmt(d.timestamp); document.getElementById("clock").textContent=now();
+    document.getElementById("s-time").textContent="Last "+fmt(d.timestamp); document.getElementById("clock").textContent=now();
     document.getElementById("i-project").textContent=shortPath(d.project);
-    if(d.sessionStart) sessionStartCache=d.sessionStart; document.getElementById("i-session").textContent=dur(sessionStartCache);
+    if(d.sessionStart) sessionStartCache=d.sessionStart; document.getElementById("i-session").textContent=sessionStartCache?"Session "+dur(sessionStartCache):"";
     if(d.gitBranch){var gt=d.gitBranch; if(d.gitStatus)gt+=" "+d.gitStatus; document.getElementById("i-git").textContent=gt;}
     if(d.model) document.getElementById("i-model").textContent=d.model;
     if(d.contextPercent){var cp=Math.round(parseFloat(d.contextPercent)); document.getElementById("g-ctx").textContent=cp+"%"; document.getElementById("g-ctx-fill").style.width=cp+"%";}
@@ -609,7 +609,7 @@ body {
 
   renderHistory(); poll();
   setInterval(poll, 10000);
-  setInterval(function(){document.getElementById("clock").textContent=now();if(sessionStartCache)document.getElementById("i-session").textContent=dur(sessionStartCache);checkFreshness();tickIdle();},30000);
+  setInterval(function(){document.getElementById("clock").textContent=now();if(sessionStartCache)document.getElementById("i-session").textContent=sessionStartCache?"Session "+dur(sessionStartCache):"";checkFreshness();tickIdle();},30000);
 })();
 </script>
 </body>
