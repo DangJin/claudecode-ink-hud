@@ -16,6 +16,189 @@ show_info() {
   echo "  Make sure Kindle and Mac are on the same WiFi."
 }
 
+TODO_URL="http://localhost:${PORT}/todo"
+STATUS_URL="http://localhost:${PORT}/status"
+PRI_SYMBOL_high="●"
+PRI_SYMBOL_mid="◐"
+PRI_SYMBOL_low="○"
+
+# Expand priority shorthand: h->high, m->mid, l->low
+expand_pri() {
+  case "${1:-m}" in
+    h|high) echo "high" ;;
+    l|low)  echo "low" ;;
+    *)      echo "mid" ;;
+  esac
+}
+
+_todo_parse_and_add() {
+  if [ $# -eq 0 ]; then
+    echo "Usage: hud a text [h|m|l]"; return 1
+  fi
+  local last="${!#}"
+  case "$last" in
+    h|high|m|mid|l|low)
+      local args=("$@")
+      unset 'args[${#args[@]}-1]'
+      todo_add "${args[*]}" "$last"
+      ;;
+    *)
+      todo_add "$*" ""
+      ;;
+  esac
+}
+
+todo_add() {
+  local text="$1"
+  if [ -z "$text" ]; then
+    echo "Usage: hud add \"text\" [h|m|l]"; return 1
+  fi
+  local pri=$(expand_pri "${2:-m}")
+  local result
+  result=$(curl -s -X POST "$TODO_URL" -H "Content-Type: application/json" \
+    -d "{\"action\":\"add\",\"text\":\"$text\",\"priority\":\"$pri\"}" 2>/dev/null)
+  if echo "$result" | jq -e '.ok' > /dev/null 2>&1; then
+    local pri_var="PRI_SYMBOL_${pri}"
+    echo "  [+] ${!pri_var:-◐} $text"
+  else
+    echo "  [!] Failed: $(echo "$result" | jq -r '.error // "unknown"')"
+  fi
+}
+
+# Interactive todo multi-selector with arrow keys
+# Usage: todo_select <action>  (action = done|rm)
+todo_select() {
+  local action="$1"
+  local label="DONE"
+  [ "$action" = "rm" ] && label="DELETE"
+
+  # Fetch todos
+  local json
+  json=$(curl -s "$STATUS_URL" 2>/dev/null)
+  if [ -z "$json" ]; then
+    echo "[hud] Server not running."; return 1
+  fi
+
+  # Parse into arrays
+  local ids=() texts=() pris=() dones=() selected=()
+  while IFS=$'\t' read -r id text pri done; do
+    ids+=("$id"); texts+=("$text"); pris+=("$pri"); dones+=("$done"); selected+=(0)
+  done < <(echo "$json" | jq -r '.todos[]? | [.id, .text, .priority, .done] | @tsv' 2>/dev/null)
+
+  local count=${#ids[@]}
+  if [ "$count" -eq 0 ]; then
+    echo "[hud] No todos."; return 0
+  fi
+
+  local cur=0
+
+  # Count selected
+  count_selected() {
+    local n=0
+    for s in "${selected[@]}"; do [ "$s" -eq 1 ] && n=$((n + 1)); done
+    echo "$n"
+  }
+
+  # Draw list
+  draw_list() {
+    [ "${1:-}" = "redraw" ] && printf "\033[%dA" "$((count + 2))"
+    local sel_n=$(count_selected)
+    local hint="arrows move, Space toggle, Enter confirm, q cancel"
+    [ "$sel_n" -gt 0 ] && hint="arrows move, Space toggle, Enter confirm ($sel_n selected), q cancel"
+    echo ""
+    echo "  [$label] $hint"
+    for i in $(seq 0 $((count - 1))); do
+      local pri_var="PRI_SYMBOL_${pris[$i]}"
+      local sym="${!pri_var:-◐}"
+      local text="${texts[$i]}"
+      local mark="   "
+      [ "${selected[$i]}" -eq 1 ] && mark=" * "
+      local done_mark=""
+      [ "${dones[$i]}" = "true" ] && done_mark=" [done]"
+      if [ "$i" -eq "$cur" ]; then
+        printf "  \033[7m%s%s %s%s \033[0m\n" "$mark" "$sym" "$text" "$done_mark"
+      else
+        printf "  %s%s %s%s\n" "$mark" "$sym" "$text" "$done_mark"
+      fi
+    done
+  }
+
+  # Hide cursor, draw
+  printf "\033[?25l"
+  draw_list
+
+  # Read keys
+  while true; do
+    read -rsn1 key
+    case "$key" in
+      $'\x1b')  # Escape sequence
+        read -rsn2 seq
+        case "$seq" in
+          '[A') [ "$cur" -gt 0 ] && cur=$((cur - 1)) ;;
+          '[B') [ "$cur" -lt $((count - 1)) ] && cur=$((cur + 1)) ;;
+        esac
+        draw_list redraw
+        ;;
+      ' ')  # Space — toggle selection
+        [ "${selected[$cur]}" -eq 0 ] && selected[$cur]=1 || selected[$cur]=0
+        draw_list redraw
+        ;;
+      '')  # Enter — confirm
+        printf "\033[?25h"
+        echo ""
+        # If nothing selected, use current cursor position
+        local any=0
+        for s in "${selected[@]}"; do [ "$s" -eq 1 ] && any=1; done
+        if [ "$any" -eq 0 ]; then
+          selected[$cur]=1
+        fi
+        # Execute action on all selected
+        for i in $(seq 0 $((count - 1))); do
+          [ "${selected[$i]}" -eq 0 ] && continue
+          if [ "$action" = "done" ]; then
+            local done_action="done"
+            [ "${dones[$i]}" = "true" ] && done_action="undone"
+            curl -s -X POST "$TODO_URL" -H "Content-Type: application/json" \
+              -d "{\"action\":\"$done_action\",\"id\":\"${ids[$i]}\"}" > /dev/null
+            [ "$done_action" = "done" ] && echo "  [v] ${texts[$i]}" || echo "  [ ] ${texts[$i]}"
+          else
+            curl -s -X POST "$TODO_URL" -H "Content-Type: application/json" \
+              -d "{\"action\":\"remove\",\"id\":\"${ids[$i]}\"}" > /dev/null
+            echo "  [x] ${texts[$i]}"
+          fi
+        done
+        return 0
+        ;;
+      q|Q)
+        printf "\033[?25h"
+        echo ""
+        echo "  Cancelled."
+        return 0
+        ;;
+    esac
+  done
+}
+
+todo_list() {
+  local json
+  json=$(curl -s "$STATUS_URL" 2>/dev/null)
+  if [ -z "$json" ]; then
+    echo "[hud] Server not running."; return 1
+  fi
+  echo ""
+  local has_items=false
+  while IFS=$'\t' read -r id text pri done; do
+    has_items=true
+    local pri_var="PRI_SYMBOL_${pri}"
+    local sym="${!pri_var:-◐}"
+    local done_mark="[ ]"
+    [ "$done" = "true" ] && done_mark="[v]"
+    printf "  %s %s %s  (%s)\n" "$done_mark" "$sym" "$text" "$id"
+  done < <(echo "$json" | jq -r '.todos[]? | [.id, .text, .priority, .done] | @tsv' 2>/dev/null)
+  [ "$has_items" = false ] && echo "  No todos."
+  echo ""
+}
+
 case "${1:-start}" in
   start)
     if pgrep -f "server.ts" > /dev/null; then
@@ -45,15 +228,42 @@ case "${1:-start}" in
       echo "[hud] Not running. Use 'hud start' to launch."
     fi
     ;;
+  a|add)
+    shift
+    _todo_parse_and_add "$@"
+    ;;
+  d|done|todo\ done)
+    todo_select done
+    ;;
+  r|rm|todo\ rm)
+    todo_select rm
+    ;;
+  l|ls|todo|todo\ ls)
+    todo_list
+    ;;
+  todo)
+    case "${2:-}" in
+      add)  shift 2; _todo_parse_and_add "$@" ;;
+      done) todo_select done ;;
+      rm)   todo_select rm ;;
+      *)    todo_list ;;
+    esac
+    ;;
   *)
     echo "ClaudeCode Ink HUD"
     echo ""
-    echo "Usage: hud [command]"
+    echo "Usage: hud <command>"
     echo ""
-    echo "Commands:"
-    echo "  start    Start the server (default)"
-    echo "  stop     Stop the server"
-    echo "  restart  Restart the server"
-    echo "  status   Check if server is running"
+    echo "Server:"
+    echo "  start          Start the server (default)"
+    echo "  stop           Stop the server"
+    echo "  restart        Restart the server"
+    echo "  status         Check if server is running"
+    echo ""
+    echo "Todo:"
+    echo "  a  \"text\" [h|m|l]   Add (h=high, m=mid, l=low)"
+    echo "  d                    Toggle done (multi-select)"
+    echo "  r                    Remove (multi-select)"
+    echo "  l                    List all"
     ;;
 esac
