@@ -81,6 +81,7 @@ function getAndCleanNotifications() {
 let state: Record<string, string> = {
   tool: "",
   file: "",
+  detail: "",
   message: "Waiting for Claude Code...",
   project: "",
   sessionStart: "",
@@ -98,6 +99,7 @@ function merge(prev: Record<string, string>, body: Record<string, string>, isMet
   return {
     tool: isMetrics ? (prev.tool || "") : (body.tool || "unknown"),
     file: isMetrics ? (prev.file || "") : (body.file || ""),
+    detail: isMetrics ? (prev.detail || "") : (body.detail || ""),
     message: isMetrics ? (prev.message || "") : (body.message || ""),
     project: body.project || prev.project || "",
     sessionStart: body.sessionStart || prev.sessionStart || "",
@@ -551,7 +553,7 @@ body {
   function updateUI(d) {
     if(d.timestamp===last) return; last=d.timestamp; resetIdle();
     var tn=cleanTool(d.tool); document.getElementById("s-tool").textContent=prefixTool(d.tool);
-    var f=document.getElementById("s-file"); if(d.file){f.textContent=d.file;f.className="act-file vis";}else{f.textContent="";f.className="act-file";}
+    var f=document.getElementById("s-file"); var ftext=d.file||d.detail||""; if(ftext){f.textContent=ftext;f.className="act-file vis";}else{f.textContent="";f.className="act-file";}
     document.getElementById("s-time").textContent="Last "+fmt(d.timestamp); document.getElementById("clock").textContent=now();
     document.getElementById("i-project").textContent=shortPath(d.project);
     if(d.sessionStart) sessionStartCache=d.sessionStart; document.getElementById("i-session").textContent=sessionStartCache?"Session "+dur(sessionStartCache):"";
@@ -560,7 +562,7 @@ body {
     if(d.contextPercent){var cp=Math.round(parseFloat(d.contextPercent)); document.getElementById("g-ctx").textContent=cp+"%"; document.getElementById("g-ctx-fill").style.width=cp+"%";}
     if(d.usage5h){var h5=Math.round(parseFloat(d.usage5h)); document.getElementById("g-5h").textContent=h5+"%"; document.getElementById("g-5h-fill").style.width=h5+"%";}
     if(d.usage7d){var d7=Math.round(parseFloat(d.usage7d)); updateBorder(d7);}
-    if(tn&&tn!=="Idle"){todayCalls++; history.unshift({tool:tn,file:shortFile(d.file),time:fmtShort(d.timestamp)}); if(history.length>MAX_HISTORY)history.pop(); renderHistory();}
+    if(tn&&tn!=="Idle"){todayCalls++; history.unshift({tool:tn,file:shortFile(d.file||d.detail),time:fmtShort(d.timestamp)}); if(history.length>MAX_HISTORY)history.pop(); renderHistory();}
     if(d.heatmap) renderHeatmap(d.heatmap);
   }
 

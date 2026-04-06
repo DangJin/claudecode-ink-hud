@@ -14,6 +14,31 @@ input=$(cat)
     file=$(echo "$input" | grep -o '"command":"[^"]*"' | head -1 | cut -d'"' -f4 | head -c 80)
   fi
 
+  # Extract detail based on tool type
+  detail=""
+  case "$tool" in
+    Agent)
+      subtype=$(echo "$input" | grep -o '"subagent_type":"[^"]*"' | head -1 | cut -d'"' -f4)
+      desc=$(echo "$input" | grep -o '"description":"[^"]*"' | head -1 | cut -d'"' -f4 | head -c 50)
+      if [ -n "$subtype" ] && [ -n "$desc" ]; then
+        detail="${subtype} — ${desc}"
+      elif [ -n "$subtype" ]; then
+        detail="$subtype"
+      else
+        detail="$desc"
+      fi
+      ;;
+    Grep)
+      detail=$(echo "$input" | grep -o '"pattern":"[^"]*"' | head -1 | cut -d'"' -f4 | head -c 40)
+      ;;
+    Glob)
+      detail=$(echo "$input" | grep -o '"pattern":"[^"]*"' | head -1 | cut -d'"' -f4 | head -c 40)
+      ;;
+    Skill)
+      detail=$(echo "$input" | grep -o '"skill":"[^"]*"' | head -1 | cut -d'"' -f4 | head -c 40)
+      ;;
+  esac
+
   session_file=$(ls -t ~/.claude/sessions/*.json 2>/dev/null | head -1)
   project="" ; session_start=""
   if [ -n "$session_file" ]; then
@@ -36,12 +61,12 @@ input=$(cat)
   # jq strongly recommended: brew install jq
   if command -v jq &>/dev/null; then
     payload=$(jq -n --arg t "$tool" --arg f "$file" --arg m "$message" \
-      --arg p "$project" --arg ss "$session_start" --arg gb "$git_branch" --arg gs "$git_status" \
-      '{tool:$t,file:$f,message:$m,project:$p,sessionStart:$ss,gitBranch:$gb,gitStatus:$gs}')
+      --arg p "$project" --arg ss "$session_start" --arg gb "$git_branch" --arg gs "$git_status" --arg d "$detail" \
+      '{tool:$t,file:$f,message:$m,project:$p,sessionStart:$ss,gitBranch:$gb,gitStatus:$gs,detail:$d}')
   else
     # Fallback: strip all quotes and backslashes from values to produce safe JSON
     clean() { echo "$1" | tr -d '"\\\n\r'; }
-    payload="{\"tool\":\"$(clean "$tool")\",\"file\":\"$(clean "$file")\",\"message\":\"$(clean "$message")\",\"project\":\"$(clean "$project")\",\"sessionStart\":\"${session_start}\",\"gitBranch\":\"$(clean "$git_branch")\",\"gitStatus\":\"$(clean "$git_status")\"}"
+    payload="{\"tool\":\"$(clean "$tool")\",\"file\":\"$(clean "$file")\",\"message\":\"$(clean "$message")\",\"project\":\"$(clean "$project")\",\"sessionStart\":\"${session_start}\",\"gitBranch\":\"$(clean "$git_branch")\",\"gitStatus\":\"$(clean "$git_status")\",\"detail\":\"$(clean "$detail")\"}"
   fi
 
   curl -s -X POST "${KINDLE_URL}/status" -H "Content-Type: application/json" -d "$payload" > /dev/null 2>&1
