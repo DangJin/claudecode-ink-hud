@@ -402,7 +402,7 @@ body {
 <div class="sl">Activity</div>
 <div class="hm" id="heatmap"></div>
 
-<div class="welcome-bg" id="welcome-bg"></div>
+<div class="welcome-bg" id="welcome-bg" onclick="dismissWelcome()"></div>
 <div class="welcome" id="welcome">
   <h1>Welcome to Claude Code Status</h1>
   <div class="w-item"><span class="w-icon">[]</span><div class="w-text"><b>Border Progress</b><br>The border fills clockwise showing 7-day usage limit.</div></div>
@@ -414,7 +414,7 @@ body {
   <button class="w-ok" onclick="dismissWelcome()">Got it!</button>
 </div>
 
-<div class="overlay-bg" id="set-bg"></div>
+<div class="overlay-bg" id="set-bg" onclick="closeSettings()"></div>
 <div class="settings" id="settings-modal">
   <div class="set-title">Reminder Settings</div>
   <div class="set-row"><span class="set-label">Drink Water</span><div class="set-ctrl"><span class="set-btn" onclick="adjWater(-5)">-</span><span><span class="set-val" id="set-water">${waterMin}</span><span class="set-unit">min</span></span><span class="set-btn" onclick="adjWater(5)">+</span></div></div>
@@ -422,11 +422,11 @@ body {
   <div class="set-actions"><button class="set-cancel" onclick="closeSettings()">Cancel</button><button class="set-ok" onclick="applySettings()">OK</button></div>
 </div>
 
-<div class="overlay-bg" id="ov-bg"></div>
+<div class="overlay-bg" id="ov-bg" onclick="dismissReminder()"></div>
 <div class="overlay" id="ov-water" onclick="resetWater()"><div class="overlay-icon"><span class="ow-rim"></span><span class="ow-body"><span class="ow-water"></span></span></div><div class="overlay-title">GO DRINK!</div><div class="overlay-sub">tap to dismiss</div></div>
 <div class="overlay" id="ov-stand" onclick="resetStand()"><div class="overlay-icon"><span class="os-head"></span><span class="os-body"></span><span class="os-arm-l"></span><span class="os-arm-r"></span><span class="os-leg-l"></span><span class="os-leg-r"></span></div><div class="overlay-title">STAND UP!</div><div class="overlay-sub">tap to dismiss</div></div>
 
-<div class="ntf-bg" id="ntf-bg"></div>
+<div class="ntf-bg" id="ntf-bg" onclick="dismissNotify()"></div>
 <div class="ntf" id="ntf-box" onclick="dismissNotify()">
   <div class="ntf-title" id="ntf-title"></div>
   <div class="ntf-msg" id="ntf-msg"></div>
@@ -452,6 +452,7 @@ body {
   }
   window.resetWater = function() { waterLeft=waterSec; document.getElementById("rm-water").className="rm-card"; document.getElementById("rm-water-time").textContent=fmtTimer(waterLeft); document.getElementById("ov-water").className="overlay"; document.getElementById("ov-bg").className="overlay-bg"; };
   window.resetStand = function() { standLeft=standSec; document.getElementById("rm-stand").className="rm-card"; document.getElementById("rm-stand-time").textContent=fmtTimer(standLeft); document.getElementById("ov-stand").className="overlay"; document.getElementById("ov-bg").className="overlay-bg"; };
+  window.dismissReminder = function() { if(document.getElementById("ov-water").classList.contains("show")) resetWater(); else resetStand(); };
   setInterval(updateTimers, 1000);
 
   var setW=${waterMin}, setS=${standMin};
